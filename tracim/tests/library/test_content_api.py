@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nose.tools import eq_, ok_
-from nose.tools import raises
-
 import transaction
+import pytest
 
 from tracim.config import CFG
 from tracim.lib.core.content import compare_content_for_sorting_by_type_and_name
@@ -28,6 +26,7 @@ from tracim.models.data import ContentType
 from tracim.models.data import UserRoleInWorkspace
 from tracim.fixtures.users_and_groups import Test as FixtureTest
 from tracim.tests import DefaultTest
+from tracim.tests import eq_
 
 
 class TestContentApi(DefaultTest):
@@ -113,8 +112,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
         workspace = WorkspaceApi(
             current_user=user,
             session=self.session
@@ -190,8 +189,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
         workspace_api = WorkspaceApi(current_user=user, session=self.session)
         workspace = workspace_api.create_workspace(
             'test workspace',
@@ -275,7 +274,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(
+        user = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
@@ -332,8 +331,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
         workspace = WorkspaceApi(
             current_user=user,
             session=self.session
@@ -387,7 +386,6 @@ class TestContentApi(DefaultTest):
         eq_(1, len(items2))
         eq_(child_id, items2[0].content_id)
 
-    @raises(ValueError)
     def test_set_status_unknown_status(self):
         uapi = UserApi(
             session=self.session,
@@ -402,8 +400,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -423,7 +421,8 @@ class TestContentApi(DefaultTest):
             tm=transaction.manager,
             content=c,
         ):
-            api.set_status(c, 'unknown-status')
+            with pytest.raises(ValueError):
+                api.set_status(c, 'unknown-status')
 
     def test_set_status_ok(self):
         uapi = UserApi(
@@ -439,8 +438,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -481,8 +480,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -523,12 +522,12 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(
+        user = uapi.create_minimal_user(
             email='user1@user',
             groups=groups,
             save_now=True
         )
-        user2 = uapi.create_user(
+        user2 = uapi.create_minimal_user(
             email='user2@user',
             groups=groups,
             save_now=True
@@ -635,12 +634,12 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(
+        user = uapi.create_minimal_user(
             email='user1@user',
             groups=groups,
             save_now=True
         )
-        user2 = uapi.create_user(
+        user2 = uapi.create_minimal_user(
             email='user2@user',
             groups=groups,
             save_now=True
@@ -745,12 +744,12 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(
+        user = uapi.create_minimal_user(
             email='user1@user',
             groups=groups,
             save_now=True,
         )
-        user2 = uapi.create_user(
+        user2 = uapi.create_minimal_user(
             email='user2@user',
             groups=groups,
             save_now=True
@@ -844,10 +843,10 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user_a = uapi.create_user(email='this.is@user',
-                                  groups=groups, save_now=True)
-        user_b = uapi.create_user(email='this.is@another.user',
-                                  groups=groups, save_now=True)
+        user_a = uapi.create_minimal_user(email='this.is@user',
+                                          groups=groups, save_now=True)
+        user_b = uapi.create_minimal_user(email='this.is@another.user',
+                                          groups=groups, save_now=True)
 
         wapi = WorkspaceApi(
             current_user=user_a,
@@ -947,12 +946,12 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user_a = uapi.create_user(
+        user_a = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
         )
-        user_b = uapi.create_user(
+        user_b = uapi.create_minimal_user(
             email='this.is@another.user',
             groups=groups,
             save_now=True
@@ -1010,12 +1009,12 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user_a = uapi.create_user(
+        user_a = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
         )
-        user_b = uapi.create_user(
+        user_b = uapi.create_minimal_user(
             email='this.is@another.user',
             groups=groups,
             save_now=True
@@ -1103,7 +1102,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
@@ -1117,8 +1116,7 @@ class TestContentApi(DefaultTest):
         
         wid = workspace.workspace_id
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1210,7 +1208,6 @@ class TestContentApi(DefaultTest):
         eq_('new content', updated.description)
         eq_(ActionDescription.EDITION, updated.revision_type)
 
-    @raises(SameValueError)
     def test_update_no_change(self):
         uapi = UserApi(
             session=self.session,
@@ -1225,7 +1222,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True,
@@ -1239,8 +1236,7 @@ class TestContentApi(DefaultTest):
             save_now=True
         )
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1280,11 +1276,12 @@ class TestContentApi(DefaultTest):
            tm=transaction.manager,
            content=content2,
         ):
-            api2.update_content(
-                item=content2,
-                new_label='same_content',
-                new_content='Same_content_here'
-            )
+            with pytest.raises(SameValueError):
+                api2.update_content(
+                    item=content2,
+                    new_label='same_content',
+                    new_content='Same_content_here'
+                )
         api2.save(content2)
         transaction.commit()
 
@@ -1302,7 +1299,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
@@ -1315,8 +1312,7 @@ class TestContentApi(DefaultTest):
         )
         wid = workspace.workspace_id
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1377,8 +1373,12 @@ class TestContentApi(DefaultTest):
             tm=transaction.manager,
             content=content2,
         ):
-            api2.update_file_data(content2, 'index.html', 'text/html',
-                                  b'<html>hello world</html>')
+            api2.update_file_data(
+                content2,
+                'index.html',
+                'text/html',
+                b'<html>hello world</html>'
+            )
         api2.save(content2)
         transaction.commit()
 
@@ -1398,7 +1398,6 @@ class TestContentApi(DefaultTest):
         eq_(b'<html>hello world</html>', updated.depot_file.file.read())
         eq_(ActionDescription.REVISION, updated.revision_type)
 
-    @raises(SameValueError)
     def test_update_no_change(self):
         uapi = UserApi(
             session=self.session,
@@ -1413,7 +1412,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True,
@@ -1425,8 +1424,7 @@ class TestContentApi(DefaultTest):
             save_now=True
         )
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1471,12 +1469,13 @@ class TestContentApi(DefaultTest):
             tm=transaction.manager,
             content=content2,
         ):
-            api2.update_file_data(
-                page,
-                'index.html',
-                'text/html',
-                b'<html>Same Content Here</html>'
-            )
+            with pytest.raises(SameValueError):
+                api2.update_file_data(
+                    page,
+                    'index.html',
+                    'text/html',
+                    b'<html>Same Content Here</html>'
+                )
         api2.save(content2)
         transaction.commit()
 
@@ -1491,7 +1490,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
@@ -1505,8 +1504,7 @@ class TestContentApi(DefaultTest):
         )
         wid = workspace.workspace_id
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1640,7 +1638,7 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user1 = uapi.create_user(
+        user1 = uapi.create_minimal_user(
             email='this.is@user',
             groups=groups,
             save_now=True
@@ -1654,8 +1652,7 @@ class TestContentApi(DefaultTest):
         )
         wid = workspace.workspace_id
 
-        user2 = uapi.create_user()
-        user2.email = 'this.is@another.user'
+        user2 = uapi.create_minimal_user('this.is@another.user')
         uapi.save(user2)
 
         RoleApi(
@@ -1790,8 +1787,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -1845,8 +1842,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -1896,8 +1893,8 @@ class TestContentApi(DefaultTest):
                   group_api.get_one(Group.TIM_MANAGER),
                   group_api.get_one(Group.TIM_ADMIN)]
 
-        user = uapi.create_user(email='this.is@user',
-                                groups=groups, save_now=True)
+        user = uapi.create_minimal_user(email='this.is@user',
+                                        groups=groups, save_now=True)
 
         workspace = WorkspaceApi(
             current_user=user,
@@ -1985,11 +1982,11 @@ class TestContentApi(DefaultTest):
 
         foo_result = api.search(['foo']).all()
         eq_(1, len(foo_result))
-        ok_(page_1 in foo_result)
+        assert page_1 in foo_result
 
         bar_result = api.search(['bar']).all()
         eq_(1, len(bar_result))
-        ok_(page_2 in bar_result)
+        assert page_2 in bar_result
 
         with new_revision(
             session=self.session,
@@ -2007,11 +2004,11 @@ class TestContentApi(DefaultTest):
         # Actually ContentApi.search don't filter it
         foo_result = api.search(['foo']).all()
         eq_(1, len(foo_result))
-        ok_(page_1 in foo_result)
+        assert page_1 in foo_result
 
         bar_result = api.search(['bar']).all()
         eq_(1, len(bar_result))
-        ok_(page_2 in bar_result)
+        assert page_2 in bar_result
 
         # ContentApi offer exclude_unavailable method to do it
         foo_result = api.search(['foo']).all()

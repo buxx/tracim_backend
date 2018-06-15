@@ -1,78 +1,173 @@
 # -*- coding: utf-8 -*-
 import threading
+from smtplib import SMTPException
 
 import transaction
 import typing as typing
 
-from tracim.models.auth import User
+from tracim.exceptions import NotificationNotSend
+from tracim.lib.mail_notifier.notifier import get_email_manager
+from sqlalchemy.orm import Session
 
-# TODO - G.M -28-03-2018 - [CurrentUser][auth]
-#  Check if "current user" stuff is always needed for tracimv2
-# CURRENT_USER_WEB = 'WEB'
-# CURRENT_USER_WSGIDAV = 'WSGIDAV'
+from tracim import CFG
+from tracim.models.auth import User
+from sqlalchemy.orm.exc import NoResultFound
+from tracim.exceptions import WrongUserPassword, UserNotExist
+from tracim.exceptions import AuthenticationFailed
+from tracim.models.context_models import UserInContext
 
 
 class UserApi(object):
 
-    def __init__(self, current_user: typing.Optional[User], session, config):
+    def __init__(
+            self,
+            current_user: typing.Optional[User],
+            session: Session,
+            config: CFG,
+    ) -> None:
         self._session = session
         self._user = current_user
         self._config = config
 
-    def get_all(self):
-        return self._session.query(User).order_by(User.display_name).all()
-
     def _base_query(self):
         return self._session.query(User)
 
-    def get_one(self, user_id: int):
-        return self._base_query().filter(User.user_id==user_id).one()
+    def get_user_with_context(self, user: User) -> UserInContext:
+        """
+        Return UserInContext object from User
+        """
+        user = UserInContext(
+            user=user,
+            dbsession=self._session,
+            config=self._config,
+        )
+        return user
 
-    def get_one_by_email(self, email: str):
-        return self._base_query().filter(User.email==email).one()
+    # Getters
 
+    def get_one(self, user_id: int) -> User:
+        """
+        Get one user by user id
+        """
+        return self._base_query().filter(User.user_id == user_id).one()
+
+    def get_one_by_email(self, email: str) -> User:
+        """
+        Get one user by email
+        :param email: Email of the user
+        :return: one user
+        """
+        return self._base_query().filter(User.email == email).one()
+
+    # FIXME - G.M - 24-04-2018 - Duplicate method with get_one.
     def get_one_by_id(self, id: int) -> User:
-        return self._base_query().filter(User.user_id==id).one()
+        return self.get_one(user_id=id)
+
+    def get_current_user(self) -> User:
+        """
+        Get current_user
+        """
+        if not self._user:
+            raise UserNotExist()
+        return self._user
+
+    def get_all(self) -> typing.Iterable[User]:
+        return self._session.query(User).order_by(User.display_name).all()
+
+    # Check methods
+
+    def user_with_email_exists(self, email: str) -> bool:
+        try:
+            self.get_one_by_email(email)
+            return True
+        # TODO - G.M - 09-04-2018 - Better exception
+        except:
+            return False
+
+    def authenticate_user(self, email: str, password: str) -> User:
+        """
+        Authenticate user with email and password, raise AuthenticationFailed
+        if uncorrect.
+        :param email: email of the user
+        :param password: cleartext password of the user
+        :return: User who was authenticated.
+        """
+        try:
+            user = self.get_one_by_email(email)
+            if user.validate_password(password):
+                return user
+            else:
+                raise WrongUserPassword()
+        except (WrongUserPassword, NoResultFound):
+            raise AuthenticationFailed()
+
+    # Actions
 
     def update(
             self,
             user: User,
             name: str=None,
             email: str=None,
-            do_save=True,
+            password: str=None,
             timezone: str='',
-    ):
+            do_save=True,
+    ) -> None:
         if name is not None:
             user.display_name = name
 
         if email is not None:
             user.email = email
 
+        if password is not None:
+            user.password = password
+
         user.timezone = timezone
 
         if do_save:
             self.save(user)
 
-        if email and self._user and user.user_id==self._user.user_id:
-            pass
-            # this is required for the _session to keep on being up-to-date
-            # TODO - G.M - 28-03-2018 -
-            # [CurrentUser] Check for pyramid equivalent
-            # tg.request.identity['repoze.who.userid'] = email
-            # tg.auth_force_login(email)
+    def create_user(
+        self,
+        email,
+        password: str = None,
+        name: str = None,
+        timezone: str = '',
+        groups=[],
+        do_save: bool=True,
+        do_notify: bool=True,
+    ) -> User:
+        new_user = self.create_minimal_user(email, groups, save_now=False)
+        self.update(
+            user=new_user,
+            name=name,
+            email=email,
+            password=password,
+            timezone=timezone,
+            do_save=False,
+        )
+        if do_notify:
+            try:
+                email_manager = get_email_manager(self._config, self._session)
+                email_manager.notify_created_account(
+                    new_user,
+                    password=password
+                )
+            except SMTPException as e:
+                raise NotificationNotSend()
+        if do_save:
+            self.save(new_user)
+        return new_user
 
-    def user_with_email_exists(self, email: str):
-        try:
-            self.get_one_by_email(email)
-            return True
-        except:
-            return False
-
-    def create_user(self, email=None, groups=[], save_now=False) -> User:
+    def create_minimal_user(
+            self,
+            email,
+            groups=[],
+            save_now=False
+    ) -> User:
+        """Previous create_user method"""
         user = User()
 
-        if email:
-            user.email = email
+        user.email = email
 
         for group in groups:
             user.groups.append(group)
@@ -115,64 +210,3 @@ class UserApi(object):
         #     calendar_class=UserCalendar,
         #     related_object_id=created_user.user_id,
         # )
-
-
-# TODO - G.M - 28-03-2018 - [CurrentUser][auth] Check for pyramid equivalent
-# class CurrentUserGetterInterface(object):
-#     def get_current_user(self) -> typing.Union[None, User]:
-#         raise NotImplementedError()
-#
-#
-# class BaseCurrentUserGetter(CurrentUserGetterInterface):
-#     def __init__(self) -> None:
-#         self.api = UserApi(None)
-
-
-# class WebCurrentUserGetter(BaseCurrentUserGetter):
-#     def get_current_user(self) -> typing.Union[None, User]:
-#         # HACK - D.A. - 2015-09-02
-#         # In tests, the tg.request.identity may not be set
-#         # (this is a buggy case, but for now this is how the software is;)
-#         if tg.request is not None:
-#             if hasattr(tg.request, 'identity'):
-#                 if tg.request.identity is not None:
-#                     return self.api.get_one_by_email(
-#                         tg.request.identity['repoze.who.userid'],
-#                     )
-#
-#         return None
-
-# TODO - G.M - 28-03-2018 - [Webdav] Reenable Webdav stuff
-# class WsgidavCurrentUserGetter(BaseCurrentUserGetter):
-#     def get_current_user(self) -> typing.Union[None, User]:
-#         if hasattr(cherrypy.request, 'current_user_email'):
-#             return self.api.get_one_by_email(
-#                 cherrypy.request.current_user_email,
-#             )
-#
-#         return None
-
-
-# class CurrentUserGetterApi(object):
-#     thread_local = threading.local()
-#     matches = {
-#         CURRENT_USER_WEB: WebCurrentUserGetter,
-#         CURRENT_USER_WSGIDAV: WsgidavCurrentUserGetter,
-#     }
-#     default = CURRENT_USER_WEB
-#
-#     @classmethod
-#     def get_current_user(cls) -> User:
-#         try:
-#             return cls.thread_local.getter.get_current_user()
-#         except AttributeError:
-#             return cls.factory(cls.default).get_current_user()
-#
-#     @classmethod
-#     def set_thread_local_getter(cls, name) -> None:
-#         if not hasattr(cls.thread_local, 'getter'):
-#             cls.thread_local.getter = cls.factory(name)
-#
-#     @classmethod
-#     def factory(cls, name: str) -> CurrentUserGetterInterface:
-#         return cls.matches[name]()

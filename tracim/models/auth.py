@@ -96,16 +96,18 @@ class Profile(object):
              Group.TIM_MANAGER_GROUPNAME,
              Group.TIM_ADMIN_GROUPNAME]
 
-    _LABEL = [l_('Nobody'),
-              l_('Users'),
-              l_('Global managers'),
-              l_('Administrators')]
+    # TODO - G.M - 18-04-2018 [Cleanup] Drop this
+    # _LABEL = [l_('Nobody'),
+    #           l_('Users'),
+    #           l_('Global managers'),
+    #           l_('Administrators')]
 
     def __init__(self, profile_id):
         assert isinstance(profile_id, int)
         self.id = profile_id
         self.name = Profile._NAME[profile_id]
-        self.label = Profile._LABEL[profile_id]
+        # TODO - G.M - 18-04-2018 [Cleanup] Drop this
+        # self.label = Profile._LABEL[profile_id]
 
 
 class User(DeclarativeBase):
@@ -157,7 +159,7 @@ class User(DeclarativeBase):
             profile_id = max(group.group_id for group in self.groups)
         return Profile(profile_id)
 
-    # TODO - G-M - 27-03-2018 - [Calendar] Check about calendar code
+    # TODO - G-M - 20-04-2018 - [Calendar] Replace this in context model object
     # @property
     # def calendar_url(self) -> str:
     #     # TODO - 20160531 - Bastien: Cyclic import if import in top of file
@@ -211,7 +213,6 @@ class User(DeclarativeBase):
 
     password = synonym('_password', descriptor=property(_get_password,
                                                         _set_password))
-
 
     def validate_password(self, cleartext_password: str) -> bool:
         """

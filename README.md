@@ -14,13 +14,24 @@ Installation
 
 ### Distribution dependencies ###
 
-TODO
+on Debian Stretch (9) with sudo:
+
+    sudo apt update
+    sudo apt install git
+    sudo apt install python3 python3-venv python3-dev python3-pip
+    sudo apt install redis-server
+
+### Get the source ###
+
+get source from github:
+
+    git clone https://github.com/tracim/tracim_backend.git
+
+go to *tracim_backend* directory:
+
+    cd tracim_backend
 
 ### Setup Python Virtualenv ###
-
-Go to *tracim* subdirectory:
-
-    cd tracim
 
 Create a Python virtual environment:
 
@@ -34,31 +45,87 @@ Upgrade packaging tools:
 
     pip install --upgrade pip setuptools
 
-Install the project in editable mode with its testing requirements:
+Install the project in editable mode with its testing requirements :
 
     pip install -e ".[testing]"
 
+If you want to use postgresql, mysql or other databases
+than the default one: sqlite, you need to install python driver for those databases
+that are supported by sqlalchemy.
+
+For postgreSQL and mySQL, those are shortcuts to install Tracim with test and
+specific driver.
+
+For PostgreSQL:
+
+    pip install -e ".[testing,postgresql]"
+
+For mySQL:
+
+    pip install -e ".[testing,mysql]"
+
 ### Configure Tracim_backend ###
 
-Create configuration files for a development environment:
+Create [configuration file](doc/setting.md) for a development environment:
 
-    cp development.ini.base development.ini
+    cp development.ini.sample development.ini
 
-Initialize the database.
+Initialize the database using [tracimcli](doc/cli.md) tool
 
-    initialize_tracim_db development.ini
+    tracimcli db init
 
-### Run Tracim_backend ###
+create wsgidav configuration file for webdav:
 
-Run your project:
+    cp wsgidav.conf.sample wsgidav.conf
 
-    pserve development.ini
+## Run Tracim_backend ##
 
-### Run Tests and others checks ###
+### With Uwsgi ###
+
+Run all services with uwsgi
+
+    # install uwsgi with pip ( unneeded if you already have uwsgi with python3 plugin enabled)
+    sudo pip3 install uwsgi
+    # set tracim_conf_file path
+    export TRACIM_CONF_PATH="$(pwd)/development.ini"
+    export TRACIM_WEBDAV_CONF_PATH="$(pwd)/wsgidav.conf"
+    # pyramid webserver
+    uwsgi -d /tmp/tracim_web.log --http-socket :6543 --wsgi-file wsgi/web.py -H env --pidfile /tmp/tracim_web.pid
+    # webdav wsgidav server
+    uwsgi -d /tmp/tracim_webdav.log --http-socket :3030 --wsgi-file wsgi/webdav.py -H env --pidfile /tmp/tracim_webdav.pid
+
+to stop them:
+
+    # pyramid webserver
+    uwsgi --stop /tmp/tracim_web.pid
+    # webdav wsgidav server
+    uwsgi --stop /tmp/tracim_webdav.pid
+
+### With Waitress (legacy way, usefull for debug) ###
+
+run tracim_backend web api:
+
+    pserve developement.ini
+
+run wsgidav server:
+
+    tracimcli webdav start
+
+## Run Tests and others checks ##
+
+Before running some functional test related to email, you need a local working *MailHog*
+see here : https://github.com/mailhog/MailHog
+
+You can run it this way with docker :
+
+    docker pull mailhog/mailhog
+    docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 Run your project's tests:
 
     pytest
+
+### Lints and others checks ###
 
 Run mypy checks:
 
@@ -67,6 +134,20 @@ Run mypy checks:
 Run pep8 checks:
 
     pep8 tracim
+
+Tracim API
+----------
+
+Tracim_backend give access to a REST API in */api/v2*.
+This API is auto-documented with [Hapic](https://github.com/algoo/hapic).
+The specification is accessible when you run Tracim, go to */api/v2/doc* .
+
+For example, with default config:
+
+    # run tracim
+    pserve development.ini
+    # launch your favorite web-browser
+    firefox http://localhost:6543/api/v2/doc/
 
 CI
 ---

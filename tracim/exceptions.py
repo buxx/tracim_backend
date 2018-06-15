@@ -59,3 +59,43 @@ class NotFound(TracimException):
 
 class SameValueError(ValueError):
     pass
+
+
+class NotAuthentificated(TracimException):
+    pass
+
+
+class WorkspaceNotFound(NotFound):
+    pass
+
+
+class InsufficientUserWorkspaceRole(TracimException):
+    pass
+
+
+class InsufficientUserProfile(TracimException):
+    pass
+
+
+class ImmutableAttribute(TracimException):
+    pass
+
+
+class DigestAuthNotImplemented(Exception):
+    pass
+
+
+class AuthenticationFailed(TracimException):
+    pass
+
+
+class WrongUserPassword(TracimException):
+    pass
+
+
+class UserNotExist(TracimException):
+    pass
+
+
+class NotificationNotSend(TracimException):
+    pass
